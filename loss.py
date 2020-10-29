@@ -12,12 +12,13 @@ class PointLoss(Loss):
         self.ft = ft
         self.rw = 0.001
 
-    def call(self, y_true, y_pred):
-        cl = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y_true, logits=y_pred)
+    def __call__(self, y_true, y_pred, sample_weight=None):
+        cce = tf.keras.losses.SparseCategoricalCrossentropy(reduction=tf.keras.losses.Reduction.NONE)
+        cl = cce(y_true, y_pred)
         cl = tf.math.reduce_mean(cl)
 
         md = tf.linalg.matmul(self.ft, tf.transpose(self.ft, perm=[0,2,1]))
-        md -= tf.constant(tf.eye(self.ft.shape[1]), dtype=tf.float32)
+        md -= tf.eye(self.ft.shape[1])
         md = tf.nn.l2_loss(md)
 
         return cl + md * self.rw

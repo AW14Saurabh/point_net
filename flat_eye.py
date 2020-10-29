@@ -24,4 +24,4 @@ class FlatEye(tf.keras.initializers.Initializer):
                 (via `tf.keras.backend.set_floatx(float_dtype)`).
         """
         row = tf.math.sqrt(float(shape[0]))
-        return tf.constant(tf.eye(row).flatten(), dtype=dtype)
+        return tf.constant(tf.reshape(tf.eye(row), shape[0]), dtype=dtype)
