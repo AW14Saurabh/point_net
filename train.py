@@ -10,11 +10,12 @@ from data import load_data, rotate, jitter, shuffle
 
 
 # Data
-x_train, y_train = load_data('data/modelnet40_ply_hdf5_2048/ply_data_train0.h5', 1024)
-x_test, y_test = load_data('data/modelnet40_ply_hdf5_2048/ply_data_test0.h5', 1024)
-x_train, y_train = shuffle(x_train, y_train)
-x_train = tf.map_fn(rotate, x_train).numpy()
-x_train = jitter(x_train)
+train = tf.data.Dataset.from_tensor_slices(load_data('data/modelnet40_ply_hdf5_2048/ply_data_train0.h5', 1024)).batch(32)
+test = tf.data.Dataset.from_tensor_slices(load_data('data/modelnet40_ply_hdf5_2048/ply_data_test0.h5', 1024)).batch(32)
+# x_train, y_train = shuffle(x_train, y_train)
+# x_train = tf.map_fn(rotate, x_train).numpy()
+# x_train = jitter(x_train)
+
 
 def network():
     # Input
@@ -90,9 +91,11 @@ inputs, outputs, ft = network()
 learning_rate = tf.keras.optimizers.schedules.ExponentialDecay(0.001, 200000, 0.7, True)
 optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
 model = tf.keras.Model(inputs=inputs, outputs=outputs, name='PointNet')
-# loss = PointLoss(ft)
-model.compile(optimizer=optimizer, loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), metrics=['accuracy'])
+loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+accuracy = tf.metrics.SparseCategoricalAccuracy()
+model.compile(optimizer=optimizer, loss=loss, metrics=[accuracy])
 
 # Train
-model.fit(x_train, y_train, batch_size=32, epochs=50)
-model.evaluate(x_test, y_test)
+model.fit(train, batch_size=32, epochs=50, shuffle=True)
+print(f"{'='*20}Evaluating Model{'='*20}")
+model.evaluate(test)
